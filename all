@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -x
+set -e
+
+# bash -xe clean_previous_instance
+# bash -xe launch_new_instance
+
+# ringgem
+
+bash -xe ringgem_setup_run
+
+## nix
+
+bash -xe nix_setup_run
+
+# brew
+
+bash -xe homebrew_setup_run
+
+exit 0
+
+# nvm
+
+bash -xe nvm_setup_run
+
+bash -xe nvm_install_run
+
+## devbox
+
+bash -xe devbox_setup_run

@@ -1,0 +1,91 @@
+#!/bin/bash
+
+set -e
+
+echo "Starting Incus end-to-end test"
+
+echo "## Cleanup"
+# Stop and remove the container 'u' if it exists
+incus list --format=json | jq -r '.[].name' | grep -w u | xargs -r incus stop --force
+incus list --format=json | jq -r '.[].name' | grep -w u | xargs -r incus delete --force
+
+# Remove any snapshots of 'u'
+incus snapshot list u 2>/dev/null | awk '{print $2}' | xargs -I{} incus delete u/{} || true
+
+# Remove the exported image file if it exists
+rm -f u-image.tar.gz
+
+# Remove any Incus images we created
+incus image list --format=json | jq -r '.[].aliases[].name' | grep -E 'u-image|u-imported' | xargs -r incus image delete
+
+# List remaining containers and images for verification
+echo "Remaining containers:"
+incus list --format=json | jq -r '.[] | select(.name=="u") | [.name, .status] | @tsv' | column -t
+echo "Remaining images:"
+incus image list --format=json | jq -r '.[] | select(.aliases[].name | test("u-image|u-imported")) | [.aliases[].name, .properties.description] | @tsv' | column -t
+
+echo "Cleanup completed. All resources related to our operations should be removed."
+
+echo "## Setup"
+# Launch a new Ubuntu 22.04 container
+incus launch images:ubuntu/22.04/cloud u
+
+echo "Waiting for the container to be ready..."
+# Poll for container readiness
+max_attempts=30
+attempt=0
+while [ $attempt -lt $max_attempts ]; do
+    if incus exec u -- systemctl is-system-running --wait &>/dev/null; then
+        echo "Container is ready."
+        break
+    fi
+    attempt=$((attempt+1))
+    echo "Waiting for container to be ready... Attempt $attempt/$max_attempts"
+    sleep 2
+done
+
+if [ $attempt -eq $max_attempts ]; then
+    echo "Container failed to become ready in time."
+    exit 1
+fi
+
+# Customize the container (example: install a package)
+# incus exec u -- apt update
+# incus exec u -- apt-get install -y nginx
+bash -xe all
+
+# # Poll for nginx to become active
+# echo "Waiting for nginx to become active..."
+# max_attempts=30
+# attempt=0
+# while [ $attempt -lt $max_attempts ]; do
+#     if incus exec u -- systemctl is-active nginx &>/dev/null; then
+#         echo "nginx is active."
+#         break
+#     fi
+#     attempt=$((attempt+1))
+#     echo "Waiting for nginx to become active... Attempt $attempt/$max_attempts"
+#     sleep 2
+# done
+
+# if [ $attempt -eq $max_attempts ]; then
+#     echo "nginx failed to become active in time."
+#     exit 1
+# fi
+
+# Create a snapshot
+incus snapshot create u u-snapshot
+
+# Publish the snapshot as an image
+incus publish u/u-snapshot --alias u-image
+
+# Export the image
+incus image export u-image u-image
+
+# Clean up the temporary image
+incus image delete u-image
+
+# Remove the original container
+incus delete --force u
+
+bash -xe create_new

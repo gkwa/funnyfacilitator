@@ -1,0 +1,3 @@
+
+incus file push ringgem_setup u/root/ringgem_setup
+incus exec u -- bash -e /root/ringgem_setup

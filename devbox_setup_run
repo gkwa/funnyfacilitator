@@ -1,0 +1,2 @@
+incus file push devbox_setup u/root/devbox_setup
+incus exec u -- bash -e /root/devbox_setup

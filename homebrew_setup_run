@@ -1,0 +1,2 @@
+incus file push homebrew_setup u/root/homebrew_setup
+incus exec u -- bash -e /root/homebrew_setup

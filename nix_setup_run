@@ -1,0 +1,2 @@
+incus file push nix_setup u/root/nix_setup
+incus exec u -- bash -e /root/nix_setup

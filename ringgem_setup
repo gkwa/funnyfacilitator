@@ -1,0 +1,5 @@
+apt-get -y install curl git
+curl -fsSL https://raw.githubusercontent.com/taylormonacelli/ringgem/master/install-go-task-on-linux.sh | bash
+
+git clone https://github.com/taylormonacelli/ringgem /tmp/ringgem
+task --dir=/tmp/ringgem -a

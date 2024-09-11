@@ -1,0 +1,62 @@
+#!/bin/bash
+
+set -e
+
+# Import the image from the exported file
+incus image import u-image.tar.gz --alias u-imported
+
+# Launch a new container from the imported image
+incus launch u-imported u
+
+echo "Waiting for the new container to be ready..."
+# # Poll for container readiness
+# max_attempts=30
+# attempt=0
+# while [ $attempt -lt $max_attempts ]; do
+#     if incus exec u -- systemctl is-system-running --wait &>/dev/null; then
+#         echo "New container is ready."
+#         break
+#     fi
+#     attempt=$((attempt+1))
+#     echo "Waiting for new container to be ready... Attempt $attempt/$max_attempts"
+#     sleep 2
+# done
+
+# if [ $attempt -eq $max_attempts ]; then
+#     echo "New container failed to become ready in time."
+#     exit 1
+# fi
+
+# Verify the new container is running and has the customizations
+echo "Container status:"
+incus list --format=json | jq -r '.[] | select(.name=="u") | [.name, .status] | @tsv' | column -t
+
+# echo "Checking nginx status..."
+# # Poll for nginx to become active in the new container
+# max_attempts=30
+# attempt=0
+# while [ $attempt -lt $max_attempts ]; do
+#     if incus exec u -- systemctl is-active nginx &>/dev/null; then
+#         echo "nginx is active in the new container."
+#         break
+#     fi
+#     attempt=$((attempt+1))
+#     echo "Waiting for nginx to become active in the new container... Attempt $attempt/$max_attempts"
+#     sleep 2
+# done
+
+# if [ $attempt -eq $max_attempts ]; then
+#     echo "nginx failed to become active in the new container."
+#     exit 1
+# fi
+
+# Clean up the imported image
+incus image delete u-imported
+
+incus ls
+
+incus image ls
+
+incus snapshot list u
+
+echo "End-to-end test completed successfully."

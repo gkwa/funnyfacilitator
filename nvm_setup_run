@@ -1,0 +1,2 @@
+incus file push nvm_setup u/root/nvm_setup
+incus exec u -- bash -e /root/nvm_setup

@@ -1,0 +1,2 @@
+incus file push node_install u/root/node_install
+incus exec u -- bash -le /root/node_install
