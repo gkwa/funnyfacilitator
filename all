@@ -18,13 +18,13 @@ bash -xe nix_setup_run
 
 bash -xe homebrew_setup_run
 
-exit 0
-
 # nvm
 
 bash -xe nvm_setup_run
 
 bash -xe nvm_install_run
+
+bash -xe nvm_check
 
 ## devbox
 

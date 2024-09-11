@@ -1,4 +1,2 @@
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 sudo --login --user linuxbrew brew install nvm
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-nvm --version
