@@ -1,3 +1,2 @@
-task --dir=/tmp/ringgem install-devbox-on-linux
+task --dir=/opt/ringgem install-devbox-on-linux
 eval "$(devbox global shellenv --recompute)"
-refresh-global
