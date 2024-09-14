@@ -1,0 +1,117 @@
+#!/bin/bash
+
+set -e
+
+# Preset values
+CONTAINER_NAME="u"
+CONTAINER_MOUNT="/root/herpeas"
+HOST_DIR="/root/herpeas"
+WORLD_WRITABLE="y"
+ADD_MAPPING="y"
+TEST_FILE="$CONTAINER_MOUNT/test_file.txt"
+DEVICE_NAME="host-mount"
+
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Check if incus is installed
+if ! command_exists incus; then
+    echo "Error: incus is not installed or not in PATH"
+    exit 1
+fi
+
+# Check if the container exists
+if ! incus info "$CONTAINER_NAME" >/dev/null 2>&1; then
+    echo "Error: Container $CONTAINER_NAME does not exist"
+    exit 1
+fi
+
+# Check if the directory exists
+if [ ! -d "$HOST_DIR" ]; then
+    echo "Error: Directory $HOST_DIR does not exist"
+    exit 1
+fi
+
+# Clean up: Remove test file if it exists
+echo "Cleaning up previous test file..."
+if incus exec "$CONTAINER_NAME" -- test -f "$TEST_FILE" 2>/dev/null; then
+    incus exec "$CONTAINER_NAME" -- rm "$TEST_FILE"
+    echo "Previous test file removed."
+else
+    echo "No previous test file found."
+fi
+
+# Check if the device already exists
+if incus config device show "$CONTAINER_NAME" | grep -q "^$DEVICE_NAME:$"; then
+    echo "Device $DEVICE_NAME already exists. Skipping device addition."
+else
+    # Add the device to the container
+    incus config device add "$CONTAINER_NAME" "$DEVICE_NAME" disk source="$HOST_DIR" path="$CONTAINER_MOUNT"
+    echo "Device $DEVICE_NAME added to $CONTAINER_NAME"
+fi
+
+# Get the UID and GID of the root user inside the container
+CONTAINER_ID=$(incus exec "$CONTAINER_NAME" -- id -u)
+CONTAINER_GID=$(incus exec "$CONTAINER_NAME" -- id -g)
+
+echo "Container root UID:GID = $CONTAINER_ID:$CONTAINER_GID"
+
+# Change ownership of the host directory
+sudo chown "$CONTAINER_ID:$CONTAINER_GID" "$HOST_DIR"
+
+# Set directory permissions to world-writable (777)
+sudo chmod 777 "$HOST_DIR"
+echo "Directory permissions set to 777 (world-writable)"
+
+# Query current ID mapping
+echo "Current ID mapping:"
+CURRENT_IDMAP=$(incus config get "$CONTAINER_NAME" raw.idmap)
+echo "$CURRENT_IDMAP"
+
+# Check container security.privileged status
+PRIVILEGED=$(incus config get "$CONTAINER_NAME" security.privileged)
+echo "Container privileged status: $PRIVILEGED"
+
+# Check if ID mapping is already set
+if [ -z "$CURRENT_IDMAP" ]; then
+    # Add UID/GID mapping to the container
+    NEW_IDMAP="uid 0 100000 65536
+gid 0 100000 65536"
+    if incus config set "$CONTAINER_NAME" raw.idmap "$NEW_IDMAP" 2>/dev/null; then
+        echo "UID/GID mapping added: 0-65535 -> 100000-165535 for both UID and GID"
+    else
+        echo "Warning: Failed to set ID mapping. This may be due to container type or existing mappings."
+        echo "Current ID mapping (if any):"
+        incus config get "$CONTAINER_NAME" raw.idmap
+        if [ "$PRIVILEGED" = "true" ]; then
+            echo "The container is privileged, so ID mapping may not be necessary."
+        else
+            echo "The container is not privileged. If you encounter issues, you may need to adjust the container's configuration."
+        fi
+    fi
+else
+    echo "ID mapping already set. Current mapping:"
+    echo "$CURRENT_IDMAP"
+fi
+
+# Restart the container
+echo "Restarting the container..."
+if ! incus restart "$CONTAINER_NAME"; then
+    echo "Error: Failed to restart the container. Please check 'incus info --show-log $CONTAINER_NAME' for details."
+    exit 1
+fi
+
+echo "Setup complete. Testing file creation..."
+
+# Test file creation
+if incus exec "$CONTAINER_NAME" -- touch "$TEST_FILE"; then
+    echo "File creation successful. Container can write to the mounted directory."
+else
+    echo "File creation failed. Please check the permissions and try again."
+    echo "Container log:"
+    incus info --show-log "$CONTAINER_NAME"
+fi
+
+echo "Script execution completed."

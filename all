@@ -26,10 +26,8 @@ bash -xe nvm_install_run
 
 bash -xe nvm_check
 
-exit 0
-
 ## devbox
 
 bash -xe devbox_setup_run
 
-bash -xe devbox_check
+# bash -xe devbox_check
