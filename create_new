@@ -7,10 +7,6 @@ incus list --format=json | jq -r '.[].name' | grep -w u | xargs -r incus rm --fo
 # Remove any Incus images we created
 incus image list --format=json | jq -r '.[].aliases[].name' | grep -E 'u-image|u-imported' | xargs -r incus image delete
 
-
-
-
-
 # Import the image from the exported file
 incus image import u-image.tar.gz --alias u-imported
 
@@ -39,6 +35,9 @@ echo "Waiting for the new container to be ready..."
 # Verify the new container is running and has the customizations
 echo "Container status:"
 incus list --format=json | jq -r '.[] | select(.name=="u") | [.name, .status] | @tsv' | column -t
+
+incus exec u -- devbox version
+incus exec u -- bash -l -c 'brew --version'
 
 # echo "Checking nginx status..."
 # # Poll for nginx to become active in the new container

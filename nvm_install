@@ -1,2 +1,2 @@
-sudo --login --user linuxbrew brew install nvm
+sudo --login --user linuxbrew /home/linuxbrew/.linuxbrew/bin/brew install nvm
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
