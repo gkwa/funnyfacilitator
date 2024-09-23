@@ -1,2 +1,4 @@
 incus file push homebrew_setup u/root/homebrew_setup
+incus file push set_brew_priority u/root/set_brew_priority
 incus exec u -- bash -e /root/homebrew_setup
+incus exec u -- bash -e /root/set_brew_priority
