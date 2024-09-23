@@ -1,28 +1,28 @@
 #!/bin/bash
 
 # Purpose: This script prioritizes /usr/local/bin in the PATH environment variable.
-# It modifies ~/.bashrc to ensure /usr/local/bin is prepended to PATH for future
-# shell sessions, and updates the current session's PATH if necessary.
+# It modifies both ~/.bashrc and ~/.profile to ensure /usr/local/bin is prepended to PATH
+# for future shell sessions, and updates the current session's PATH if necessary.
 # This is particularly useful for prioritizing locally installed tools (e.g., Homebrew)
 # over system-wide versions. The script is idempotent and can be run multiple times safely.
 
-# Function to update PATH in .bashrc
-update_bashrc() {
-    local bashrc_file="$HOME/.bashrc"
+# Function to update PATH in a given file
+update_path_in_file() {
+    local file="$1"
     local path_entry="/usr/local/bin"
     
-    # Check if .bashrc exists, if not create it
-    if [ ! -f "$bashrc_file" ]; then
-        touch "$bashrc_file"
+    # Check if file exists, if not create it
+    if [ ! -f "$file" ]; then
+        touch "$file"
     fi
     
-    # Check if PATH update already exists in .bashrc
-    if grep -q "export PATH=\"$path_entry:\$PATH\"" "$bashrc_file"; then
-        echo "PATH already updated in .bashrc"
+    # Check if PATH update already exists in the file
+    if grep -q "export PATH=\"$path_entry:\$PATH\"" "$file"; then
+        echo "PATH already updated in $file"
     else
-        echo -e "\n# Prepend /usr/local/bin to PATH" >> "$bashrc_file"
-        echo "export PATH=\"$path_entry:\$PATH\"" >> "$bashrc_file"
-        echo "Updated .bashrc with new PATH"
+        echo -e "\n# Prepend /usr/local/bin to PATH" >> "$file"
+        echo "export PATH=\"$path_entry:\$PATH\"" >> "$file"
+        echo "Updated $file with new PATH"
     fi
 }
 
@@ -37,7 +37,8 @@ update_current_path() {
 }
 
 # Main execution
-update_bashrc
+update_path_in_file "$HOME/.bashrc"
+update_path_in_file "$HOME/.profile"
 update_current_path
 
-echo "Script execution complete. Please run 'source ~/.bashrc' or start a new terminal session for changes to take effect."
+echo "Script execution complete. Please run 'source ~/.bashrc' and 'source ~/.profile', or start a new terminal session for changes to take effect."
